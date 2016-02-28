@@ -1,0 +1,66 @@
+#!/usr/bin/env python 
+#
+# gdraw: simple interactive drawing program maps keypresses to gcodes
+# and sends them to grbl on an arduino via a usb serial connection on
+# OSX.
+#
+
+# config:
+
+SERIAL_PATH='/dev/ttyACM*'
+STD_FEED=1000
+STD_FEED_Z=100
+
+
+import sys
+import os.path
+import pygame
+# path hack so we can import from sibling lib directory. 
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+from lib.grblstuff import setup_logging, hello_grbl, do_command
+from lib.JoyStatus import JoyStatus
+import time
+
+#debug:
+
+#def do_command(grbl, cmd, wait=False):
+  #print cmd
+  #time.sleep(0.1)
+
+#def hello_grbl(pattern=None, conf=None):
+  #return True
+  
+
+def main():
+    grbl = hello_grbl(SERIAL_PATH)
+    if not grbl:
+        sys.exit(0)
+    do_command(grbl, "G21") # set mm
+    do_command(grbl, "G91") # incremental step mode
+    pygame.init()
+    joy = JoyStatus()
+    print "Use joystick to move; Button 1 sets home; Button 9 exits"
+    
+    while (True):
+      pygame.event.get()
+      xyz = joy.getXYZ()
+      if xyz != (0,0,0):
+        # go slower in Z moves
+        if xyz[2] != 0:
+          feed = STD_FEED_Z
+        else:
+          feed = STD_FEED
+        # run command and wait for it to finish
+        do_command(grbl, "G01 X%.3f Y%.3f Z%.3f F%d" % (xyz[0], xyz[1], xyz[2], feed), True) 
+        
+      if joy.getButton(0):
+        do_command(grbl, "G92 X0 Y0 Z0") #set home with button 0
+        
+      if joy.getButton(8):
+        break
+
+    do_command(grbl, "G90") # absolute positioning
+    grbl.close()
+
+if __name__ == "__main__":
+    sys.exit(main())

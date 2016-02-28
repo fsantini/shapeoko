@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from lib.grblstuff import hello_grbl, do_command, wait_motion, setup_logging,\
     pen_up
 #from lib.grblstuff import command_bounds, scale_commands, clip_commands
-
+import sys
 
 
 def log(logger='gcat'):
@@ -30,7 +30,7 @@ def main():
     ./grbl.conf or /usr/local/etc/grbl.conf if these exist and are not
     overridden by the --conf or --noconf options.
     """)
-    parser.add_option("--dev", default = "/dev/tty.usbmodem*",
+    parser.add_option("--dev", default = "/dev/ttyACM*",
                       help="filepath pattern for grbl serial device"),
     parser.add_option("-c", "--conf", 
                       help="config file to send to grbl at startup")
@@ -72,15 +72,25 @@ def main():
         log().info("reading stdin...")
         lines = sys.stdin.readlines()
     bbox = [int(x) for x in opts.bbox.split(",")]
+    nLines = len(lines)
     try:
+        curLine = 0
+        oldPercent = 0
+        sys.stdout.write("0%   ")
         for line in lines:
             do_command(grbl, line)
+            curLine = curLine+1
+            newPercent = round(curLines/nLines*100)
+            if newPercent > oldPercent:
+              sys.stdout.write("\r%d%%   " % newPercent)
+              oldPercent = newPercent
     except KeyboardInterrupt:
         # reset and penup
         log().critical("Interrupt!")
         grbl.close() 
         grbl = hello_grbl(opts.dev, conf)
         pen_up(grbl)
+    print ""
     wait_motion(grbl)
     pen_up(grbl)
     grbl.close()
