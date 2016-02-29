@@ -1,0 +1,92 @@
+#!/usr/bin/env python 
+#
+# gjoycat: use the joypad to jog the robot, and then send a file.
+#
+
+SERIAL_PATH='/dev/ttyACM*'
+G0_FEED = 5000
+
+
+import sys
+import os.path
+from optparse import OptionParser
+# path hack so we can import from sibling lib directory. 
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+from lib.grblstuff import hello_grbl, do_command, wait_motion, pen_up
+  
+from lib.GCodeAnalyzer import GCodeAnalyzer
+import sys
+from gjoymove import joyjog
+import re
+import fileinput
+
+def truncateGCode(gcode):
+  def replace(match):
+	match = match.group(2)
+	return "." + match[0:4]
+
+  pattern = re.compile(r"([.])([0-9]+)")
+  return re.sub(pattern, replace, gcode)
+
+def formatTime(minutes):
+  hours = int(minutes/60)
+  mins = int(minutes-hours*60)
+  return "%dh%dm" % (hours, mins)
+
+def main():
+
+    grbl = hello_grbl(SERIAL_PATH)
+    if not grbl:
+        sys.exit(0)
+        
+    # load gcode
+    print "Reading file..."
+    lines = [] # read all file
+    for line in fileinput.input():
+      lines.append(line)
+    
+    
+    analyzer = GCodeAnalyzer()
+    analyzer.fastf = G0_FEED
+    
+    print "Analyzing gcode..."
+    for line in lines:
+      analyzer.Analyze(line)
+      
+    print "Bounding box:", analyzer.getBoundingBox()
+    print "Travel distance:", analyzer.getTravelLen()
+    print "Travel time:", formatTime(analyzer.getTravelTime())
+    
+    print "Use joystick to set home. Set home with button 1, button 9 to start, button 10 to abort"
+    
+    if not joyjog(grbl):
+      print "printing aborted"
+      sys.exit(-1)
+        
+    nLines = len(lines)
+    print "nLines:", nLines
+    try:
+        curLine = 0
+        oldPercent = 0
+        sys.stdout.write("0%   ")
+        for line in lines:
+	    line = truncateGCode(line)
+            do_command(grbl, line)
+            curLine = curLine+1
+            newPercent = curLine*100/nLines
+            sys.stdout.write("\r%d%%   " % newPercent)
+            sys.stdout.flush()
+            #oldPercent = newPercent
+    except KeyboardInterrupt:
+        # reset and penup
+        grbl.close() 
+        grbl = hello_grbl(SERIAL_PATH)
+        joyjog(grbl)
+    wait_motion(grbl)
+    print "Job finished. Use joystick to move"
+    joyjog(grbl)
+    grbl.close()
+
+if __name__ == "__main__":
+    sys.exit(main())
+

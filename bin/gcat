@@ -14,7 +14,6 @@ from lib.grblstuff import hello_grbl, do_command, wait_motion, setup_logging,\
 #from lib.grblstuff import command_bounds, scale_commands, clip_commands
 import sys
 
-
 def log(logger='gcat'):
     return logging.getLogger(logger)
 
@@ -80,7 +79,7 @@ def main():
         for line in lines:
             do_command(grbl, line)
             curLine = curLine+1
-            newPercent = round(curLines/nLines*100)
+            newPercent = round(curLine/nLines*100)
             if newPercent > oldPercent:
               sys.stdout.write("\r%d%%   " % newPercent)
               oldPercent = newPercent

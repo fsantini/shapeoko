@@ -44,7 +44,7 @@ def open_grbl(serial_dev_pattern=None):
     if not grbl_paths:
         raise GRBLException("Can't find serial device, is the grbl plugged in?")
     log().info("connecting to grbl via %s" % grbl_paths[0])
-    return serial.Serial(grbl_paths[0], 9600, timeout=5, dsrdtr=True)
+    return serial.Serial(grbl_paths[0], 115200, timeout=5, dsrdtr=True)
 
 def reset_grbl_connection(serial_dev_pattern=None):
     """
