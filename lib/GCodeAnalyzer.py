@@ -20,6 +20,9 @@
 import re
 import math
 import fileinput
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.realpath(__file__)))))
 from gcodeconv import GCodeConverter
 
 def safeInt(val):

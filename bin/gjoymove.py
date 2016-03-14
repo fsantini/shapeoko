@@ -16,7 +16,7 @@ import sys
 import os.path
 import pygame
 # path hack so we can import from sibling lib directory. 
-sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.realpath(__file__)))))
 from lib.grblstuff import setup_logging, hello_grbl, do_command
 from lib.JoyStatus import JoyStatus
 import time
